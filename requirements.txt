@@ -1,0 +1,11 @@
+python 3.6.8
+argparse 1.1
+numpy 1.19.5
+scipy 1.5.4
+tensorflow 2.4.3
+tensorflow_datasets 4.1.0
+tensorflow_addons 0.14.0
+tensorflow_probability 0.11.0
+torch 1.7.0
+torchvision 0.8.1
+datasetops
