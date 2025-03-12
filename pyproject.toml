@@ -1,0 +1,27 @@
+[project]
+name = "randconvpruning"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "argparse>=1.4.0",
+    "datasetops>=0.0.6",
+    "numpy>=2.1.3",
+    "scipy>=1.15.2",
+    "tensorflow>=2.19.0",
+    "tensorflow-datasets>=4.9.7",
+    "tensorflow-probability>=0.25.0",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["UP","D415","D400","D212","RET504","FA","FBT001","FBT002","S301","ANN101","ANN204","D107","ANN102","PT009","PERF203","BLE001","T201","D100","PLR0913"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
