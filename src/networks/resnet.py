@@ -1,47 +1,61 @@
-__all__ = ['resnet_layer','resnet_v1']
+__all__ = ["resnet_layer", "resnet_v1"]
 
-import tensorflow as tf
-import os,sys
 
-sys.path.append(os.path.abspath(os.path.join(__file__, os.pardir)))
+from typing import Tuple
 
-from ..layers.pruning import pruning
+import tensorflow as tf  # type: ignore  # noqa: PGH003
 
-###############################################################################################################################################
-#Resnet : network of "Deep Residual Learning for Image Recognition"
-#Code taken from https://keras.io/zh/examples/cifar10_resnet/ and adapted
-#Normal version and Pruned version (all layers ar pruned except the last layer)
-###############################################################################################################################################
+from src.layers.pruning import pruning
 
-def resnet_layer(inputs,
-                 num_filters=16,
-                 kernel_size=3,
-                 strides=1,
-                 activation='relu',
-                 batch_normalization=True,
-                 conv_first=True,prune=False):
-    """2D Convolution-Batch Normalization-Activation stack builder
+################################################################################
+# Resnet : network of "Deep Residual Learning for Image Recognition"
+# Code taken from https://keras.io/zh/examples/cifar10_resnet/ and adapted
+# Normal version and Pruned version (all layers ar pruned except the last layer)
+################################################################################
 
-    # Arguments
-        inputs (tensor): input tensor from input image or previous layer
-        num_filters (int): Conv2D number of filters
-        kernel_size (int): Conv2D square kernel dimensions
-        strides (int): Conv2D square stride dimensions
-        activation (string): activation name
-        batch_normalization (bool): whether to include batch normalization
-        conv_first (bool): conv-bn-activation (True) or
-            bn-activation-conv (False)
-        prune (bool): use pruning
 
-    # Returns
-        x (tensor): tensor as input to the next layer
+def resnet_layer(
+    inputs: tf.Tensor,
+    num_filters: int = 16,
+    kernel_size: int = 3,
+    strides: int = 1,
+    activation: str = "relu",
+    batch_normalization: bool = True,
+    conv_first: bool = True,
+    prune: bool = False,
+) -> tf.Tensor:
     """
-    conv = tf.keras.layers.Conv2D(num_filters,
-                  kernel_size=kernel_size,
-                  strides=strides,
-                  padding='same',
-                  kernel_initializer='he_normal',
-                  kernel_regularizer=tf.keras.regularizers.l2(1e-4))
+    Summary: 2D Convolution-Batch Normalization-Activation stack builder
+
+    :param inputs: input tensor from input image or previous layer
+    :type inputs: tf.Tensor
+    :param num_filters: Conv2D number of filters, defaults to 16
+    :type num_filters: int, optional
+    :param kernel_size: Conv2D square kernel dimensions, defaults to 3
+    :type kernel_size: int, optional
+    :param strides: Conv2D square stride dimensions, defaults to 1
+    :type strides: int, optional
+    :param activation: activation name, defaults to "relu"
+    :type activation: str, optional
+    :param batch_normalization:  whether to include batch normalization,
+    defaults to True
+    :type batch_normalization: bool, optional
+    :param conv_first: conv-bn-activation (True) or
+            bn-activation-conv (False), defaults to True
+    :type conv_first: bool, optional
+    :param prune: use pruning if True, defaults to False
+    :type prune: bool, optional
+    :return: tensor as input to the next layer
+    :rtype: tf.Tensor
+    """
+    conv = tf.keras.layers.Conv2D(
+        num_filters,
+        kernel_size=kernel_size,
+        strides=strides,
+        padding="same",
+        kernel_initializer="he_normal",
+        kernel_regularizer=tf.keras.regularizers.l2(1e-4),
+    )
     if prune:
         conv = pruning(conv)
 
@@ -61,8 +75,14 @@ def resnet_layer(inputs,
     return x
 
 
-def resnet_v1(input_shape, depth, num_classes=10,prune=False):
-    """ResNet Version 1 Model builder [a]
+def resnet_v1(
+    input_shape: Tuple[int],
+    depth: int,
+    num_classes: int = 10,
+    prune: bool = False,
+) -> tf.keras.Model:
+    """
+    Summary: ResNet Version 1 Model builder [a]
 
     Stacks of 2 x (3 x 3) Conv2D-BN-ReLU
     Last ReLU is after the shortcut connection.
@@ -81,46 +101,56 @@ def resnet_v1(input_shape, depth, num_classes=10,prune=False):
     ResNet56 0.85M
     ResNet110 1.7M
 
-    # Arguments
-        input_shape (tensor): shape of input image tensor
-        depth (int): number of core convolutional layers
-        num_classes (int): number of classes (CIFAR10 has 10)
-        prune (bool): use pruning class to encapsulate all layers except the last layer.
-
-    # Returns
-        model (Model): Keras model instance
+    :param input_shape: input_shape of the model, defaults to (32, 32, 3)
+    :type input_shape: Tuple[int], optional
+    :param num_classes: number of classes, defaults to 10
+    :type num_classes: int, optional
+    :param prune: prune model if true, defaults to False
+    :type prune: bool, optional
+    :return: model
+    :rtype: tf.keras.Model
     """
     if (depth - 2) % 6 != 0:
-        raise ValueError('depth should be 6n+2 (eg 20, 32, 44 in [a])')
+        msg = "depth should be 6n+2 (eg 20, 32, 44 in [a])"
+        raise ValueError(msg)
     # Start model definition.
     num_filters = 16
     num_res_blocks = int((depth - 2) / 6)
 
     inputs = tf.keras.Input(shape=input_shape)
-    x = resnet_layer(inputs=inputs,prune=prune)
+    x = resnet_layer(inputs=inputs, prune=prune)
     # Instantiate the stack of residual units
     for stack in range(3):
         for res_block in range(num_res_blocks):
             strides = 1
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 strides = 2  # downsample
-            y = resnet_layer(inputs=x,
-                             num_filters=num_filters,
-                             strides=strides,prune=prune)
-            y = resnet_layer(inputs=y,
-                             num_filters=num_filters,
-                             activation=None,prune=prune)
+            y = resnet_layer(
+                inputs=x,
+                num_filters=num_filters,
+                strides=strides,
+                prune=prune,
+            )
+            y = resnet_layer(
+                inputs=y,
+                num_filters=num_filters,
+                activation=None,
+                prune=prune,
+            )
             if stack > 0 and res_block == 0:  # first layer but not first stack
                 # linear projection residual shortcut connection to match
                 # changed dims
-                x = resnet_layer(inputs=x,
-                                 num_filters=num_filters,
-                                 kernel_size=1,
-                                 strides=strides,
-                                 activation=None,
-                                 batch_normalization=False,prune=prune)
+                x = resnet_layer(
+                    inputs=x,
+                    num_filters=num_filters,
+                    kernel_size=1,
+                    strides=strides,
+                    activation=None,
+                    batch_normalization=False,
+                    prune=prune,
+                )
             x = tf.keras.layers.Add()([x, y])
-            x = tf.keras.layers.Activation('relu')(x)
+            x = tf.keras.layers.Activation("relu")(x)
         num_filters *= 2
 
     # Add classifier on top.
@@ -128,15 +158,25 @@ def resnet_v1(input_shape, depth, num_classes=10,prune=False):
     x = tf.keras.layers.AveragePooling2D(pool_size=8)(x)
     y = tf.keras.layers.Flatten()(x)
     if prune:
-        y = pruning(tf.keras.layers.Dense(num_classes,
-                    activation='linear',
-                    kernel_initializer='he_normal'),last=True)(y)
+        y = pruning(
+            tf.keras.layers.Dense(
+                num_classes,
+                activation="linear",
+                kernel_initializer="he_normal",
+            ),
+            last=True,
+        )(y)
     else:
-        y = tf.keras.layers.Dense(num_classes,
-                    activation='linear',
-                    kernel_initializer='he_normal')(y)
-    outputs = tf.keras.layers.Activation(activation='softmax')(y)
+        y = tf.keras.layers.Dense(
+            num_classes,
+            activation="linear",
+            kernel_initializer="he_normal",
+        )(y)
+    outputs = tf.keras.layers.Activation(activation="softmax")(y)
 
     # Instantiate model.
-    model = tf.keras.Model(inputs={"image":inputs}, outputs={"label":outputs,"output":y,"feature":x})
+    model = tf.keras.Model(
+        inputs={"image": inputs},
+        outputs={"label": outputs, "output": y, "feature": x},
+    )
     return model
