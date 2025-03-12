@@ -52,4 +52,4 @@ def prune(model,sparsity,previous_sparsity,dataset,trainer):
         new_model = StructuredPruning(model,FPGMHeuristic,sparsity,layer_wise=True,aggregate="no_aggregate",**kwargs)
     else:
         new_model = model
-    return model
+    return new_model
