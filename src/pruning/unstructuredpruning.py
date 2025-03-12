@@ -1,7 +1,6 @@
 __all__ = ['UnstructuredPruning']
 
 import tensorflow as tf
-import tensorflow_probability as tfp
 import numpy as np
 
 """
@@ -35,7 +34,7 @@ def UnstructuredPruning(model,heuristic_function,sparsity=20.0,previous_sparsity
                 list_score = list(dico.values())
                 list_score = [tf.reshape(x, [-1]) for x in list_score]
                 score_vector = tf.concat(list_score,-1)
-                threshold=tfp.stats.percentile(score_vector, q=new_sparsity)
+                threshold = np.percentile(score_vector.numpy(),new_sparsity)
                 new_kernel_mask = tf.cast(tf.where(dico["kernel"]<=threshold,0,1),dtype=tf.float32)
                 layer.kernel_mask.assign(new_kernel_mask)
                 if layer.bias_mask is not None:
@@ -46,7 +45,7 @@ def UnstructuredPruning(model,heuristic_function,sparsity=20.0,previous_sparsity
             list_score = [x for x in list_score if x is not None]
             list_score = [tf.reshape(x, [-1]) for x in list_score]
             score_vector = tf.concat(list_score,-1)
-            threshold = tfp.stats.percentile(score_vector, q=new_sparsity)
+            threshold = np.percentile(score_vector.numpy(),new_sparsity)
             for layer,dico in dico_score.items():
                 new_kernel_mask = tf.cast(tf.where(dico["kernel"]<=threshold,0,1),dtype=tf.float32)
                 layer.kernel_mask.assign(new_kernel_mask)

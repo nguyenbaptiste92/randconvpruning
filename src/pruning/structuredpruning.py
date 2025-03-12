@@ -1,7 +1,7 @@
 __all__ = ['StructuredPruning']
 
 import tensorflow as tf
-import tensorflow_probability as tfp
+import numpy as np
 
 from .utils import *
 
@@ -40,14 +40,14 @@ def StructuredPruning(model,heuristic_function,sparsity=0.2,previous_sparsity=0.
                  
         if layer_wise:
             for layer,score in dico_score.items():
-                threshold=tfp.stats.percentile(score["kernel"], q=new_sparsity)
+                threshold = np.percentile(score["kernel"].numpy(),new_sparsity)
                 score_mask = tf.cast(tf.where(score["kernel"]<=threshold,0,1),dtype=tf.float32)
                 layer.kernel_mask.assign(tf.ones_like(layer.kernel_mask)*score_mask)
                 if layer.bias_mask is not None:
                     layer.bias_mask.assign(tf.ones_like(layer.bias_mask)*score_mask)
         else:
             score_vector = tf.concat([score["kernel"] for score in dico_score.values() if "kernel" in score],-1)
-            threshold = tfp.stats.percentile(score_vector, q=new_sparsity)
+            threshold = np.percentile(score_vector.numpy(),new_sparsity)
             for layer,score in dico_score.items():
                 score_mask = tf.cast(tf.where(score["kernel"]<=threshold,0,1),dtype=tf.float32)
                 layer.kernel_mask.assign(tf.ones_like(layer.kernel_mask)*score_mask)

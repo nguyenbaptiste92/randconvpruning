@@ -2,7 +2,6 @@ __all__ = ['PrunedTemporalCNN1D']
 
 import numpy as np
 import tensorflow as tf
-import tensorflow_addons as tfa
 import os,sys
 
 sys.path.append(os.path.abspath(os.path.join(__file__, os.pardir)))

@@ -3,7 +3,6 @@ import sys
 sys.path.append(os.path.abspath(''))
 
 import tensorflow as tf
-import tensorflow_addons as tfa
 import time
 from random import randint
 from pathlib import Path
@@ -65,7 +64,7 @@ class RandCNN:
                     if metric=="accuracy":
                         self.metrics["accuracy"]=tf.keras.metrics.CategoricalAccuracy()
                     elif metric=="f1score":
-                        self.metrics["f1score"]=tfa.metrics.F1Score(num_classes=self.args.n_classes,average="macro")
+                        self.metrics["f1score"]=tf.keras.metrics.F1Score(average="macro")
                         
                 self.pred_loss_metric = tf.keras.metrics.Mean()
                 self.consticency_loss_metric = tf.keras.metrics.Mean()
@@ -81,7 +80,7 @@ class RandCNN:
                 if metric=="accuracy":
                     self.metrics["accuracy"]=tf.keras.metrics.CategoricalAccuracy()
                 elif metric=="f1score":
-                    self.metrics["f1score"]=tfa.metrics.F1Score(num_classes=self.args.n_classes,average="macro")
+                    self.metrics["f1score"]=tf.keras.metrics.F1Score(average="macro")
             self.pred_loss_metric = tf.keras.metrics.Mean()
             self.consticency_loss_metric = tf.keras.metrics.Mean()
         
@@ -123,9 +122,9 @@ class RandCNN:
         if SGD:
             print("Using SGD optimizer")
             if scheduler is None:
-                optimizer = tfa.optimizers.SGDW(learning_rate=learning_rate, momentum=momentum,nesterov=nesterov,weight_decay=weight_decay)
+                optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=momentum,nesterov=nesterov,weight_decay=weight_decay)
             else:
-                optimizer = tfa.optimizers.SGDW(learning_rate=scheduler, momentum=momentum,nesterov=nesterov,weight_decay=weight_decay)
+                optimizer = tf.keras.optimizers.SGD(learning_rate=scheduler, momentum=momentum,nesterov=nesterov,weight_decay=weight_decay)
         else:
             print("Using Adam optimizer")
             if scheduler is None:
