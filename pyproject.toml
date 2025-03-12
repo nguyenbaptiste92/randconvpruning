@@ -9,12 +9,16 @@ dependencies = [
     "pandas>=2.2.3",
     "scikit-learn>=1.6.1",
     "scipy>=1.15.2",
-    "tensorflow>=2.19.0",
+    "tensorflow[and-cuda]>=2.19.0",
     "tensorflow-datasets>=4.9.7",
 ]
 
 [tool.setuptools.packages.find]
 include = ["src*"]
+
+[tool.ruff]
+# Set the maximum line length to 80.
+line-length = 80
 
 [tool.ruff.lint]
 select = ["ALL"]
