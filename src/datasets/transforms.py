@@ -141,6 +141,7 @@ def RandomGrayscale(p=0.1):
         
 
     def func(x):
+        im, lbl = x["image"], x["label"]
         tf.debugging.assert_equal(im.shape[-1],3,message="Colored images should have 3 channels")
         random_value=tf.random.uniform(shape=[])
         shape=im.shape
