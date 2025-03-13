@@ -2,3 +2,9 @@ data/
 logs/
 results/
 saved_model/
+.venv/
+randconvpruning.egg-info/
+
+.python-version
+
+__pycache__/

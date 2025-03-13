@@ -8,9 +8,24 @@ Project to study the impact of neural network pruning in the Single Domain Gener
 
 __This work benefited from the French Jean Zay supercomputer thanks to the AI dynamic access program.__
 
-## Requirements
-See `requirements.txt`. For more details you can see, the file `environment.txt` obtain with `environment.py`
+## How do I get set up? #
+### Set Virtual Environment
+ In order to use this project in the best condition, we recommend to use [uv](https://docs.astral.sh/uv/) to install the environment. To do so, go to the base folder of the alpine project (where the pyproject.toml file is) and execute the following command:
 
+```sh
+uv sync
+```
+
+Once created, you can activate the environment with the following command :
+
+```sh
+source .venv/bin/activate
+```
+
+To run a python file with [uv](https://docs.astral.sh/uv/), you can use the following command :
+```sh
+uv run train_digits.py 
+```
 ## Single Domain Generalization algorithm
 
 We used the method from the article [Robust and Generalizable Visual Representation Learning via Random Convolutions](https://openreview.net/pdf?id=BVSM0x3EDK6) as our Single domain Generalization method.
@@ -44,3 +59,12 @@ Our project includes several folders:
 By modifying the settings (parser arguments) on thoses files, our experiments can be reproduced.
 
 * You can select the gpu which will be used with the parameter "-g". To run the programm with several gpu ([tf.distribute.MirroredStrategy](https://www.tensorflow.org/api_docs/python/tf/distribute/MirroredStrategy)), use "--multi_gpu".
+
+## Refactor
+
+* Use CI/CD tools like [ClearML](https://clear.ml/) to save logs instead of tensorboard and local files
+
+* Split Trainer into smaller function (rand_conv, pruning)
+
+* Separate SNIP pruning from the rand conv
+
