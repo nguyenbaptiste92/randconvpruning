@@ -1,39 +1,28 @@
+import argparse
 import os
-import sys
-
-sys.path.append(os.path.abspath(""))
-
 import time
 from pathlib import Path
 from random import randint
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import tensorflow as tf
 
-from parser import *
-from src.datasets.transforms import *
-from src.layers.rand_conv import *
+from parser import get_exp_name
+from src.layers.rand_conv import RandConvModule
 from src.pruning.pruning_helper import prune
 from src.pruning.utils import calcul_sparsity
 
 
-def get_random_module(args, data_mean, data_std):
-    return RandConvModule(
-        filters=args.channel_size,
-        kernel_sizes=args.kernel_size,
-        mode=args.rand_conv_mode,
-        mixing=args.mixing,
-        identity_prob=args.identity_prob,
-        rand_bias=args.rand_bias,
-        distribution=args.distribution,
-        data_mean=data_mean,
-        data_std=data_std,
-        clamp_output=args.clamp_output,
-    )
-
-
 class RandCNN:
-    def __init__(self, args):
+    """RandCNN trainer class"""
+
+    def __init__(self, args: argparse.Namespace) -> None:
+        """
+        Summary: initialize trainer
+
+        :param args: args
+        :type args: argparse.Namespace
+        """
         self.args = args
 
         if len(self.args.n_iter) > 0:
@@ -53,14 +42,13 @@ class RandCNN:
 
         # Creation of log file
         self.set_path()
-        Path(os.getcwd() + os.sep + self.log_folder).mkdir(
+        absolute_path = Path.getcwd() / self.log_folder
+        absolute_path.mkdir(
             parents=True,
             exist_ok=True,
         )
-        with open(
-            os.getcwd() + os.sep + self.log_folder + os.sep + "parameter.txt",
-            "w+",
-        ) as file_object:
+        parameter_path = absolute_path / "parameter.txt"
+        with parameter_path.open("w+") as file_object:
             file_object.write("Parameter of experiment.\n")
             file_object.write(self.exp_name)
 
@@ -121,8 +109,10 @@ class RandCNN:
 
         self.global_step = tf.Variable(0, trainable=False, dtype=tf.int64)
 
-    # Function to select log folder path: if the path already exist, randomization is used to create another path
-    def set_path(self):
+    # Function to select log folder path: if the path already exist,
+    # randomization is used to create another path
+    def set_path(self) -> None:
+        """Sumary: set save folder path for logs"""
         self.log_folder = os.path.join(
             "logs",
             self.args.data_name,
@@ -140,20 +130,46 @@ class RandCNN:
         while os.path.exists(self.model_folder):
             self.model_folder = self.model_folder + "_" + str(randint(0, 1000))
 
-    # Function to create the optimizer depending of the arguments given by the user
     def set_optimizer_and_scheduler(
         self,
-        learning_rate,
-        SGD=False,
-        momentum=0.9,
-        weight_decay=5e-4,
-        nesterov=False,
-        scheduler_name="",
-        step_size=20,
-        gamma=0.1,
-        milestones=(10, 20),
-        n_epoch=30,
-    ):
+        learning_rate: float,
+        sgd: bool = False,
+        momentum: float = 0.9,
+        weight_decay: float = 5e-4,
+        nesterov: bool = False,
+        scheduler_name: str = "",
+        step_size: float = 20,
+        gamma: float = 0.1,
+        milestones: Tuple[int] = (10, 20),
+        n_epoch: int = 30,
+    ) -> Tuple[tf.keras.optimizers.Optimizer, tf.keras.LearningRateScheduler]:
+        """
+        Summary: create the optimizer and scheduler
+
+        :param learning_rate: learning_rate
+        :type learning_rate: float
+        :param sgd: use sgd, defaults to False
+        :type sgd: bool, optional
+        :param momentum: momentum, defaults to 0.9
+        :type momentum: float, optional
+        :param weight_decay:weight_decay, defaults to 5e-4
+        :type weight_decay: float, optional
+        :param nesterov: use nesterov, defaults to False
+        :type nesterov: bool, optional
+        :param scheduler_name: nam of shceduler, defaults to ""
+        :type scheduler_name: str, optional
+        :param step_size: step siwe for scheduler, defaults to 20
+        :type step_size: float, optional
+        :param gamma: gamma for scheduler, defaults to 0.1
+        :type gamma: float, optional
+        :param milestones: milestones for scheduler, defaults to (10, 20)
+        :type milestones: Tuple[int], optional
+        :param n_epoch: n epoch for scheduler, defaults to 30
+        :type n_epoch: int, optional
+
+        :rtype: Tuple[tf.keras.optimizers.Optimizer,
+        tf.keras.LearningRateScheduler]
+        """
         if scheduler_name == "StepLR":
             scheduler = tf.keras.optimizers.schedules.ExponentialDecay(
                 learning_rate,
@@ -184,7 +200,7 @@ class RandCNN:
             raise NotImplementedError
 
         # only update non-random layers
-        if SGD:
+        if sgd:
             print("Using SGD optimizer")
             if scheduler is None:
                 optimizer = tf.keras.optimizers.SGD(
@@ -214,20 +230,25 @@ class RandCNN:
     # Training function
     def train(
         self,
-        model,
-        train_dataset,
-        valid_datasets,
-        data_mean=None,
-        data_std=None,
-    ):
+        model: tf.keras.Model,
+        train_dataset: tf.data.Dataset,
+        valid_datasets: Dict[str, tf.data.Dataset],
+        data_mean: List[float] = None,
+        data_std: List[float] = None,
+    ) -> None:
         """
-        Training a classfication CNN with random layers
-        :param net: base model
+        Summary: Training a classfication CNN with random layers
+
+        :param model: base model
+        :type model: tf.keras.Model
         :param train_dataset: dataset used for training
+        :type train_dataset: tf.data.Dataset
         :param valid_datasets: dict of all the datasets use for validation
-        :param data_mean: mean of dataset (a vector of 3 for color images)
-        :param data_std: std of dataset (a vector of 3 for color images)
-        :return:
+        :type valid_datasets: Dict[str, tf.data.Dataset]
+        :param data_mean: mean of dataset, defaults to None
+        :type data_mean: List[float], optional
+        :param data_std: std of dataset, defaults to None
+        :type data_std: List[float], optional
         """
         self.data_mean = data_mean
         self.data_std = data_std
@@ -238,11 +259,23 @@ class RandCNN:
 
         self.model = model
 
-        # get the random conv layers and trainable parameters : Need to add the part which can select only classifier parameters
+        # get the random conv layers and trainable parameters : Need to add the
+        # part which can select only classifier parameters
 
         if self.args.rand_conv:
             print("\n=========Set Up Rand layers=========")
-            self.rand_module = get_random_module(self.args, data_mean, data_std)
+            self.rand_module = RandConvModule(
+                filters=self.args.channel_size,
+                kernel_sizes=self.args.kernel_size,
+                mode=self.args.rand_conv_mode,
+                mixing=self.args.mixing,
+                identity_prob=self.args.identity_prob,
+                rand_bias=self.args.rand_bias,
+                distribution=self.args.distribution,
+                data_mean=self.data_mean,
+                data_std=self.data_std,
+                clamp_output=self.args.clamp_output,
+            )
         else:
             self.rand_module = None
 
@@ -326,7 +359,7 @@ class RandCNN:
                 )
                 print("\n=========Training with rand layers=========")
                 if self.args.finetuning and i == 1:
-                    # learning_rate = self.optimizer._decayed_lr(tf.float32)
+                    learning_rate = self.optimizer._decayed_lr(tf.float32)
                     if self.args.multi_gpu:
                         with self.strategy.scope():
                             self.optimizer, self.scheduler = (
@@ -651,7 +684,22 @@ class RandCNN:
             axis=None,
         ), self.strategy.reduce("SUM", per_replica_inv_loss, axis=None)
 
-    def train_epoch(self, epoch, max_epoch, train_dataset):
+    def train_epoch(
+        self,
+        epoch: int,
+        max_epoch: int,
+        train_dataset: tf.data.Dataset,
+    ) -> None:
+        """
+        Summary: train epoch
+
+        :param epoch: epoch
+        :type epoch: int
+        :param max_epoch: max_epoch
+        :type max_epoch: int
+        :param train_dataset: train_dataset
+        :type train_dataset: train_dataset
+        """
         # Reinitialize metrics for epoch
         for metric in self.metrics.values():
             metric.reset_state()
@@ -674,10 +722,13 @@ class RandCNN:
                 self.args.source,
             ),
         )
-        progBar = tf.keras.utils.Progbar(
+        progbar = tf.keras.utils.Progbar(
             self.n_steps_per_epoch,
-            stateful_metrics=["pred_loss", "consistency_loss"]
-            + list(self.metrics.keys()),
+            stateful_metrics=[
+                "pred_loss",
+                "consistency_loss",
+                *list(self.metrics.keys()),
+            ],
             verbose=self.args.verbose,
         )
 
@@ -693,7 +744,7 @@ class RandCNN:
                 ("pred_loss", pred_loss),
                 ("consistency_loss", inv_loss),
             ] + [(key, metric.result()) for key, metric in self.metrics.items()]
-            progBar.update(i + 1, values=values)
+            progbar.update(i + 1, values=values)
             # Update the global step
             self.global_step.assign_add(1)
 
@@ -729,11 +780,19 @@ class RandCNN:
                 liste_print,
             )
 
-    #################### TEST FUNCTIONS ###############################################################################################################
+    #################### TEST FUNCTIONS #######################################
+    def validate_step(
+        self,
+        data: Dict[str, tf.Tensor],
+    ) -> None:
+        """
+        Summary: validation step
 
-    def validate_step(self, elem):
-        inputs = elem["image"]
-        target = elem["label"]
+        :param data: dict with "image" and "label" key
+        :type data: Dict[str, tf.Tensor]
+        """
+        inputs = data["image"]
+        target = data["label"]
 
         if self.rand_module is not None and self.args.val_with_rand:
             inputs = self.rand_module(inputs)
@@ -744,11 +803,40 @@ class RandCNN:
 
     # MultiGPU
     @tf.function
-    def distributed_validate_step(self, elem):
-        self.strategy.run(self.validate_step, args=(elem,))
+    def distributed_validate_step(
+        self,
+        data: Dict[str, tf.Tensor],
+    ) -> None:
+        """
+        Summary: distributed validation step
 
-    def validate_epoch(self, epoch, maxepoch, valid_datasets, n_eval):
-        assert isinstance(valid_datasets, dict)
+        :param data: dict with "image" and "label" key
+        :type data: Dict[str, tf.Tensor]
+        """
+        self.strategy.run(self.validate_step, args=(data,))
+
+    def validate_epoch(
+        self,
+        epoch: int,
+        maxepoch: int,
+        valid_datasets: Dict[str, tf.data.Dataset],
+        n_eval: int,
+    ) -> None:
+        """
+        Summary: train epoch
+
+        :param epoch: epoch
+        :type epoch: int
+        :param maxepoch: maxepoch
+        :type maxepoch: int
+        :param valid_datasets: dictionary of validation dataset
+        :type valid_datasets: Dict[str, tf.data.Dataset]
+        :param n_eval: number of eval per sample (randonv)
+        :type n_eval: int
+        """
+        if not (isinstance(valid_datasets, dict)):
+            msg = "valid_datasets should be dict"
+            raise TypeError(msg)
 
         self.model.compile(
             loss=self.criterion,
@@ -759,7 +847,7 @@ class RandCNN:
                 "\nEvaluation epoch {}/{} on {}".format(epoch, maxepoch, name),
             )
 
-            progBar = tf.keras.utils.Progbar(
+            progbar = tf.keras.utils.Progbar(
                 self.args.valid_datasets_cardinality[name],
                 stateful_metrics=list(self.metrics.keys()),
                 verbose=self.args.verbose,
@@ -768,7 +856,7 @@ class RandCNN:
                 metric.reset_state()
 
             for i, elem in enumerate(dataset):
-                for j in range(n_eval):
+                for _ in range(n_eval):
                     if self.args.multi_gpu:
                         self.distributed_validate_step(elem)
                     else:
@@ -778,7 +866,7 @@ class RandCNN:
                     (key, metric.result())
                     for key, metric in self.metrics.items()
                 ]
-                progBar.update(i + 1, values=values)
+                progbar.update(i + 1, values=values)
 
             with self.writer.as_default():
                 for key, metric in self.metrics.items():

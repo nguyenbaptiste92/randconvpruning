@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 trap "exit" INT
-base_command="python3 train_har.py -g 0 --net pruned_temportal_cnn1d --source realworld --source_localisation chest --metric accuracy f1score --save_model -chs 3 "
+base_command="uv run train_har.py -g 0 --net pruned_temportal_cnn1d --source realworld --source_localisation chest --metric accuracy f1score --save_model -chs 3 "
 
 exp_name="test_experiment_har"
 id_job=10

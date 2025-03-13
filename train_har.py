@@ -3,7 +3,7 @@ import os
 import random
 from pathlib import Path
 
-import numpy as np  # type: ignore  # noqa: PGH003
+import numpy as np
 
 from parser import add_pruning, add_rand_layer_args, add_training_args
 
@@ -157,7 +157,7 @@ if __name__ == "__main__":
             [str(elem) for elem in args.gpu_ids],
         )
 
-    import tensorflow as tf  # type: ignore  # noqa: PGH003
+    import tensorflow as tf
 
     import randconv_trainer as rct
     from src.datasets.data_helper import get_dataset

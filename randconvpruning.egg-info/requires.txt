@@ -1,0 +1,6 @@
+gdown>=5.2.0
+pandas>=2.2.3
+scikit-learn>=1.6.1
+scipy>=1.15.2
+tensorflow[and-cuda]>=2.19.0
+tensorflow-datasets>=4.9.7
