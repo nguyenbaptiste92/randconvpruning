@@ -3,7 +3,7 @@ __all__ = ["pruning"]
 import inspect
 from typing import Tuple
 
-import tensorflow as tf  # type: ignore  # noqa: PGH003
+import tensorflow as tf
 
 from .base import dict_basic_func
 from .utils import get_args, get_signature, register_keras_custom_object

@@ -8,7 +8,7 @@ __all__ = [
 import inspect
 from typing import Any, Dict
 
-import tensorflow as tf  # type: ignore  # noqa: PGH003
+import tensorflow as tf
 
 
 def register_keras_custom_object(cls: Any) -> Any:
