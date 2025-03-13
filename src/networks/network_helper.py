@@ -2,7 +2,7 @@ __all__ = ["get_network"]
 
 import argparse
 
-import tensorflow as tf  # type: ignore  # noqa: PGH003
+import tensorflow as tf
 
 from .digit_net import DigitNet, PrunedDigitNet, SmallPrunedDigitNet
 from .hhar_nn import PrunedTemporalCNN1D

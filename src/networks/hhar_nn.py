@@ -3,7 +3,7 @@ __all__ = ["PrunedTemporalCNN1D"]
 
 from typing import Tuple
 
-import tensorflow as tf  # type: ignore  # noqa: PGH003
+import tensorflow as tf
 
 from src.layers.pruning import pruning
 
